@@ -121,6 +121,7 @@ public class FlutterLocalNotificationsPlugin
 
   static final String PAYLOAD = "payload";
   static final String NOTIFICATION_ID = "notificationId";
+  static final String NOTIFICATION_TAG = "notificationTag";
   static final String CANCEL_NOTIFICATION = "cancelNotification";
 
   private static final String TAG = "FLTLocalNotifPlugin";
@@ -309,6 +310,7 @@ public class FlutterLocalNotificationsPlugin
 
         actionIntent
             .putExtra(NOTIFICATION_ID, notificationDetails.id)
+            .putExtra(NOTIFICATION_TAG, notificationDetails.tag)
             .putExtra(ACTION_ID, action.id)
             .putExtra(CANCEL_NOTIFICATION, action.cancelNotification)
             .putExtra(PAYLOAD, notificationDetails.payload);
@@ -623,6 +625,7 @@ public class FlutterLocalNotificationsPlugin
     final int notificationId = intent.getIntExtra(NOTIFICATION_ID, 0);
     final Map<String, Object> notificationResponseMap = new HashMap<>();
     notificationResponseMap.put(NOTIFICATION_ID, notificationId);
+    notificationResponseMap.put(NOTIFICATION_TAG, intent.getStringExtra(NOTIFICATION_TAG));
     notificationResponseMap.put(ACTION_ID, intent.getStringExtra(ACTION_ID));
     notificationResponseMap.put(
         FlutterLocalNotificationsPlugin.PAYLOAD,
@@ -2127,11 +2130,16 @@ public class FlutterLocalNotificationsPlugin
             channelPayload.put("sound", resource);
           } else {
             // Kept for backwards compatibility when the source resource used to be based on id
-            String resourceName =
-                applicationContext.getResources().getResourceEntryName(resourceId);
-            if (resourceName != null) {
-              channelPayload.put("soundSource", soundSources.indexOf(SoundSource.RawResource));
-              channelPayload.put("sound", resourceName);
+            try {
+              String resourceName =
+                  applicationContext.getResources().getResourceEntryName(resourceId);
+              if (resourceName != null) {
+                channelPayload.put("soundSource", soundSources.indexOf(SoundSource.RawResource));
+                channelPayload.put("sound", resourceName);
+              }
+            } catch (Exception e) {
+              channelPayload.put("sound", null);
+              channelPayload.put("playSound", false);
             }
           }
         } else {
