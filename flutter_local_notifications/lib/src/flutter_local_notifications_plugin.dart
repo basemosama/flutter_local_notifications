@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications_linux/flutter_local_notifications_linux.dart';
 import 'package:flutter_local_notifications_platform_interface/flutter_local_notifications_platform_interface.dart';
+import 'package:flutter_local_notifications_web/flutter_local_notifications_web.dart';
 import 'package:flutter_local_notifications_windows/flutter_local_notifications_windows.dart';
 import 'package:timezone/timezone.dart';
 
@@ -11,7 +12,6 @@ import 'notification_details.dart';
 import 'platform_flutter_local_notifications.dart';
 import 'platform_specifics/android/schedule_mode.dart';
 import 'types.dart';
-import 'web_flutter_local_notifications.dart';
 
 /// Provides cross-platform functionality for displaying local notifications.
 ///
@@ -116,7 +116,9 @@ class FlutterLocalNotificationsPlugin {
     if (kIsWeb) {
       return resolvePlatformSpecificImplementation<
               WebFlutterLocalNotificationsPlugin>()
-          ?.initialize();
+          ?.initialize(
+        onNotificationReceived: onDidReceiveNotificationResponse,
+      );
     }
 
     if (defaultTargetPlatform == TargetPlatform.android) {
@@ -202,9 +204,10 @@ class FlutterLocalNotificationsPlugin {
   Future<NotificationAppLaunchDetails?>
       getNotificationAppLaunchDetails() async {
     if (kIsWeb) {
-      return null;
-    }
-    if (defaultTargetPlatform == TargetPlatform.android) {
+      return await resolvePlatformSpecificImplementation<
+              WebFlutterLocalNotificationsPlugin>()
+          ?.getNotificationAppLaunchDetails();
+    } else if (defaultTargetPlatform == TargetPlatform.android) {
       return await resolvePlatformSpecificImplementation<
               AndroidFlutterLocalNotificationsPlugin>()
           ?.getNotificationAppLaunchDetails();
@@ -308,6 +311,17 @@ class FlutterLocalNotificationsPlugin {
   /// have already been presented.
   Future<void> cancelAll() async {
     await FlutterLocalNotificationsPlatform.instance.cancelAll();
+  }
+
+  /// Cancels/removes all pending notifications.
+  ///
+  /// This only applies to notifications that have been scheduled.
+  ///
+  /// The method is supported on Android, iOS and macOS.
+  /// On other platforms, an [UnimplementedError] will be thrown.
+  Future<void> cancelAllPendingNotifications() async {
+    await FlutterLocalNotificationsPlatform.instance
+        .cancelAllPendingNotifications();
   }
 
   /// Schedules a notification to be shown at the specified date and time
